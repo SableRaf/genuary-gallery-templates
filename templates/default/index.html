@@ -18,43 +18,29 @@
       flex-direction: column;
     }
 
-    header {
-      padding: 0.5rem 1rem;
-      flex-shrink: 0;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
-
-    .header-left,
-    .header-center {
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-    }
-
-    .header-left {
-      min-width: 200px;
-    }
-
-    .header-center {
-      flex: 1;
-      align-items: center;
-      text-align: center;
-    }
-
-    .nav-controls {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-    }
 
     #prompt {
       font-size: 1rem;
+      width: fit-content;
       font-weight: bold;
+      color: #ffffff;
+      font-family: monospace;
+      background: transparent;
+      border: none;
+      padding: 0;
+      padding-right: 20px;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right center;
+      background-size: 16px;
+    }
+
+    #prompt option {
+      background: #000000;
       color: #ffffff;
     }
 
@@ -65,17 +51,17 @@
     }
 
     #credit {
-      font-size: 0.7rem;
-      color: #ffffff;
+      font-size: 0.8rem;
+      color: #bababa;
     }
 
     #credit a {
-      color: #ffffff;
+      color: #bababa;
       text-decoration: underline;
     }
 
     #credit a:hover {
-      color: #d4d4d4;
+      color: #e2e2e2;
     }
 
     .title-bar {
@@ -87,19 +73,24 @@
       justify-content: space-between;
       align-items: center;
       gap: 1rem;
-      flex-wrap: wrap;
     }
 
-    .title-bar-left,
-    .title-bar-right {
+    .title-bar-left {
       display: flex;
       flex-direction: column;
       gap: 0.25rem;
+      flex: 1;
     }
 
     .title-bar-right {
       text-align: right;
       min-width: 150px;
+    }
+
+    .nav-button {
+      color: #ffffff;
+      font-size: 1.2rem;
+      min-width: 30px;
     }
 
     button {
@@ -112,8 +103,12 @@
     }
 
     button:disabled {
-      opacity: 0.99;
+      opacity: 0.3;
       cursor: default;
+    }
+
+    button:not(:disabled):hover {
+      opacity: 0.7;
     }
 
     select {
@@ -141,24 +136,17 @@
   </style>
 </head>
 <body>
-  <header>
-    <div class="header-center">
-      <div class="nav-controls">
-        <button id="prev" onclick="previousSketch()">&larr; previous</button>
-        <select id="day-select"></select>
-        <button id="next" onclick="nextSketch()">next &rarr;</button>
-      </div>
-    </div>
-  </header>
   <div class="title-bar">
+    <button id="prev" class="nav-button" onclick="previousSketch()">&larr;</button>
     <div class="title-bar-left">
-      <div id="prompt">Loading prompts...</div>
+      <select id="prompt">Loading prompts...</select>
       <div id="description">Loading...</div>
       <div id="credit"></div>
     </div>
     <div class="title-bar-right">
       <div id="title">Genuary Gallery</div>
     </div>
+    <button id="next" class="nav-button" onclick="nextSketch()">&rarr;</button>
   </div>
   <iframe id="sketch-frame"></iframe>
 
@@ -166,9 +154,8 @@
     let sketches = [];
     let currentIndex = 0;
     let galleryYear = null;
-    const daySelect = document.getElementById('day-select');
-    const titleElement = document.getElementById('title');
     const promptElement = document.getElementById('prompt');
+    const titleElement = document.getElementById('title');
     const descriptionElement = document.getElementById('description');
     const creditElement = document.getElementById('credit');
     const frameElement = document.getElementById('sketch-frame');
@@ -229,11 +216,10 @@
     }
 
     function showPromptsError(message) {
-      promptElement.textContent = 'Unable to load prompts.';
+      promptElement.innerHTML = '<option>Unable to load prompts.</option>';
       descriptionElement.textContent = message;
       creditElement.textContent = '';
-      daySelect.innerHTML = '';
-      daySelect.disabled = true;
+      promptElement.disabled = true;
       prevButton.disabled = true;
       nextButton.disabled = true;
       frameElement.removeAttribute('src');
@@ -263,8 +249,6 @@
       currentIndex = index;
       const sketch = sketches[index];
 
-      const dayLabel = String(sketch.day).padStart(2, '0');
-      promptElement.textContent = `day ${dayLabel}: ${sketch.prompt || formatShorthand(sketch.shorthand)}`;
       descriptionElement.textContent = sketch.description || sketch.prompt || formatShorthand(sketch.shorthand);
 
       if (sketch.credit && sketch.credit.length > 0) {
@@ -279,7 +263,7 @@
 
       prevButton.disabled = index === 0;
       nextButton.disabled = index === sketches.length - 1;
-      daySelect.value = String(index);
+      promptElement.value = String(index);
 
       frameElement.src = `sketches/${sketch.name}/index.html`;
 
@@ -295,17 +279,17 @@
     }
 
     function populateDaySelect() {
-      daySelect.innerHTML = '';
+      promptElement.innerHTML = '';
       sketches.forEach((sketch, index) => {
         const option = document.createElement('option');
         const dayNum = String(sketch.day).padStart(2, '0');
         option.value = index;
         option.textContent = `day ${dayNum}: ${formatShorthand(sketch.shorthand)}`;
-        daySelect.appendChild(option);
+        promptElement.appendChild(option);
       });
     }
 
-    daySelect.addEventListener('change', (e) => {
+    promptElement.addEventListener('change', (e) => {
       const index = parseInt(e.target.value, 10);
       loadSketch(index);
     });
@@ -354,7 +338,7 @@
           return;
         }
 
-        daySelect.disabled = false;
+        promptElement.disabled = false;
         populateDaySelect();
         loadFromHash();
         window.addEventListener('hashchange', loadFromHash);
