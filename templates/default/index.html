@@ -41,7 +41,7 @@
     #prompt {
       font-size: 1rem;
       width: fit-content;
-      font-weight: bold;
+      font-weight: normal;
       color: #ffffff;
       font-family: monospace;
       background: transparent;
@@ -82,6 +82,14 @@
     }
 
     #credit a:hover {
+      color: #e2e2e2;
+    }
+
+    #artist-website {
+      text-decoration: underline;
+    }
+
+    #artist-website:hover {
       color: #e2e2e2;
     }
 
@@ -259,6 +267,7 @@
     const defaultConfig = {
       windowTitle: 'Genuary Gallery',
       artistName: '',
+      artistWebsite: '',
       headerTitle: ''
     };
     let config = { ...defaultConfig };
@@ -274,6 +283,19 @@
         .replace(/^_+|_+$/g, '') || 'sketch';
     }
 
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function escapeAttr(str) {
+      return escapeHtml(str)
+        .replace(/\"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
     function updateTitleBar() {
       const yearSuffix = galleryYear ? ` ${galleryYear}` : '';
       const baseTitle = 'Genuary Gallery';
@@ -283,11 +305,23 @@
       // Keep the visible title and the page heading in sync for screen readers
       const customHeader = config.headerTitle && config.headerTitle.trim();
       const artistName = config.artistName && config.artistName.trim();
+      const artistWebsite = config.artistWebsite && config.artistWebsite.trim();
       const displayTitle = galleryYear ? `Genuary ${galleryYear}` : baseTitle;
-      const finalTitle = customHeader ? customHeader : (artistName ? `${displayTitle} by ${artistName}` : displayTitle);
-      titleElement.textContent = finalTitle;
+
       const heading = document.getElementById('page-heading');
-      if (heading) heading.textContent = finalTitle;
+
+      if (customHeader) {
+        titleElement.textContent = customHeader;
+        if (heading) heading.textContent = customHeader;
+      } else if (artistName) {
+        const safeName = escapeHtml(artistName);
+        const safeUrl = artistWebsite ? escapeAttr(artistWebsite) : '';
+        titleElement.innerHTML = `${escapeHtml(displayTitle)} by <a href="${safeUrl}" id="artist-website" target="_blank" rel="noopener noreferrer">${safeName}</a>`;
+        if (heading) heading.textContent = `${displayTitle} by ${artistName}`;
+      } else {
+        titleElement.textContent = displayTitle;
+        if (heading) heading.textContent = displayTitle;
+      }
     }
 
     async function loadConfig() {
