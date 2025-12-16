@@ -156,6 +156,58 @@
       flex: 1;
       border: none;
     }
+    
+    /* Accessibility: visible focus for keyboard users */
+    button:focus, select:focus, #prompt:focus {
+      outline: 3px solid rgba(255,255,255,0.9);
+      outline-offset: 2px;
+    }
+
+    /* Mobile / small-screen responsive adjustments */
+    @media (max-width: 640px) {
+      .title-bar {
+        flex-wrap: wrap;
+        align-items: stretch;
+        gap: 0.5rem;
+        padding: 0.75rem;
+      }
+
+      .title-bar-left {
+        flex: 1 1 100%;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .title-bar-right {
+        flex: 1 1 100%;
+        text-align: left;
+        min-width: 0;
+      }
+
+      /* Make the select expand to full width for easier tapping */
+      #prompt {
+        width: 100%;
+        padding-right: 40px;
+        font-size: 0.8rem;
+      }
+
+      #credit {
+        font-size: 0.7rem;
+      }
+
+      #title {
+        display: none;
+      }
+
+      .nav-button {
+        display: none;
+      }
+
+      iframe {
+        /* give previews a reasonable height on mobile */
+        min-height: 50vh;
+      }
+    }
   </style>
 </head>
 <body>
