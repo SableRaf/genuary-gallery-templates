@@ -175,31 +175,45 @@
       .title-bar-left {
         flex: 1 1 100%;
         flex-direction: column;
-        gap: 0.5rem;
+        gap: 0.6rem;
       }
 
       .title-bar-right {
         flex: 1 1 100%;
-        text-align: left;
+        text-align: center;
         min-width: 0;
+      }
+
+      #title {
+        text-align: center;
+        width: 100%;
+        padding-bottom: 6px;
       }
 
       /* Make the select expand to full width for easier tapping */
       #prompt {
         width: 100%;
         padding-right: 40px;
-        font-size: 0.8rem;
+        font-size: 0.9rem;
       }
 
       #credit {
-        font-size: 0.7rem;
+        font-size: 0.75rem;
       }
 
-      #title {
-        display: none;
+      /* On small screens, show the title above the prompt by reordering */
+      .title-bar-right {
+        order: -1;
+        flex: 1 1 100%;
+        text-align: center;
       }
 
-      .nav-button {
+      .title-bar-left {
+        order: 0;
+      }
+
+      /* Hide navigation buttons on small screens */
+      #prev, #next {
         display: none;
       }
 
