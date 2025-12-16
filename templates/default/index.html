@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Genuary {{YEAR}}</title>
+  <title>Genuary Gallery</title>
   <style>
     * {
       margin: 0;
@@ -59,17 +59,13 @@
     }
 
     #description {
+      display: none;
       font-size: 0.8rem;
       color: #ffffff;
     }
 
     #credit {
       font-size: 0.7rem;
-      color: #ffffff;
-    }
-
-    #title {
-      font-size: 1rem;
       color: #ffffff;
     }
 
@@ -156,34 +152,50 @@
   </header>
   <div class="title-bar">
     <div class="title-bar-left">
-      <div id="prompt">Loading...</div>
+      <div id="prompt">Loading prompts...</div>
       <div id="description">Loading...</div>
       <div id="credit"></div>
     </div>
     <div class="title-bar-right">
-      <div id="title">Genuary {{YEAR}}</div>
+      <div id="title">Genuary Gallery</div>
     </div>
   </div>
   <iframe id="sketch-frame"></iframe>
 
   <script>
-    const sketches = {{SKETCHES_JSON}};
+    let sketches = [];
     let currentIndex = 0;
+    let galleryYear = null;
     const daySelect = document.getElementById('day-select');
     const titleElement = document.getElementById('title');
+    const promptElement = document.getElementById('prompt');
+    const descriptionElement = document.getElementById('description');
+    const creditElement = document.getElementById('credit');
+    const frameElement = document.getElementById('sketch-frame');
+    const prevButton = document.getElementById('prev');
+    const nextButton = document.getElementById('next');
     const defaultConfig = {
-      windowTitle: 'Genuary {{YEAR}}',
-      artistName: 'Your Name Here',
+      windowTitle: 'Genuary Gallery',
+      artistName: '',
       headerTitle: ''
     };
     let config = { ...defaultConfig };
 
     function formatShorthand(str) {
-      return str.replace(/_/g, ' ');
+      return str.replace(/_/g, ' ').replace(/-/g, ' ');
+    }
+
+    function sanitize(value) {
+      return value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '') || 'sketch';
     }
 
     function updateTitleBar() {
-      const docTitle = config.windowTitle || defaultConfig.windowTitle;
+      const yearSuffix = galleryYear ? ` ${galleryYear}` : '';
+      const baseTitle = 'Genuary Gallery';
+      const docTitle = config.windowTitle || (baseTitle + yearSuffix);
       document.title = docTitle;
 
       const customHeader = config.headerTitle && config.headerTitle.trim();
@@ -193,7 +205,8 @@
       }
 
       const artistName = config.artistName && config.artistName.trim();
-      titleElement.textContent = artistName ? `${docTitle} by ${artistName}` : docTitle;
+      const displayTitle = galleryYear ? `Genuary ${galleryYear}` : baseTitle;
+      titleElement.textContent = artistName ? `${displayTitle} by ${artistName}` : displayTitle;
     }
 
     async function loadConfig() {
@@ -215,30 +228,60 @@
       }
     }
 
+    function showPromptsError(message) {
+      promptElement.textContent = 'Unable to load prompts.';
+      descriptionElement.textContent = message;
+      creditElement.textContent = '';
+      daySelect.innerHTML = '';
+      daySelect.disabled = true;
+      prevButton.disabled = true;
+      nextButton.disabled = true;
+      frameElement.removeAttribute('src');
+    }
+
+    function createSketchEntries(prompts) {
+      return prompts.map((prompt, index) => {
+        const day = prompt.day ?? (index + 1);
+        const shorthand = prompt.shorthand || prompt.name || `day-${String(day).padStart(2, '0')}`;
+        const folderName = prompt.folderName || `${String(day).padStart(2, '0')}_${sanitize(shorthand)}`;
+
+        return {
+          day,
+          name: folderName,
+          prompt: prompt.name || formatShorthand(shorthand),
+          description: prompt.description || '',
+          shorthand,
+          credit: Array.isArray(prompt.credit) ? prompt.credit : [],
+          creditUrl: Array.isArray(prompt.creditUrl) ? prompt.creditUrl : []
+        };
+      });
+    }
+
     function loadSketch(index) {
       if (index < 0 || index >= sketches.length) return;
 
       currentIndex = index;
       const sketch = sketches[index];
 
-      document.getElementById('description').textContent = sketch.description || sketch.shorthand;
+      const dayLabel = String(sketch.day).padStart(2, '0');
+      promptElement.textContent = `day ${dayLabel}: ${sketch.prompt || formatShorthand(sketch.shorthand)}`;
+      descriptionElement.textContent = sketch.description || sketch.prompt || formatShorthand(sketch.shorthand);
 
-      const creditEl = document.getElementById('credit');
       if (sketch.credit && sketch.credit.length > 0) {
         const credits = sketch.credit.map((name, i) => {
           const url = sketch.creditUrl && sketch.creditUrl[i];
           return url ? `<a href="${url}" target="_blank">${name}</a>` : name;
         }).join(', ');
-        creditEl.innerHTML = `Prompt by ${credits}`;
+        creditElement.innerHTML = `Prompt by ${credits}`;
       } else {
-        creditEl.innerHTML = '';
+        creditElement.innerHTML = '';
       }
 
-      document.getElementById('prev').disabled = index === 0;
-      document.getElementById('next').disabled = index === sketches.length - 1;
-      daySelect.value = index;
+      prevButton.disabled = index === 0;
+      nextButton.disabled = index === sketches.length - 1;
+      daySelect.value = String(index);
 
-      document.getElementById('sketch-frame').src = `sketches/${sketch.name}/index.html`;
+      frameElement.src = `sketches/${sketch.name}/index.html`;
 
       history.replaceState(null, null, `#day${sketch.day}`);
     }
@@ -252,6 +295,7 @@
     }
 
     function populateDaySelect() {
+      daySelect.innerHTML = '';
       sketches.forEach((sketch, index) => {
         const option = document.createElement('option');
         const dayNum = String(sketch.day).padStart(2, '0');
@@ -272,6 +316,7 @@
     });
 
     function loadFromHash() {
+      if (!sketches.length) return;
       const hash = window.location.hash;
       if (hash) {
         const match = hash.match(/day(\d+)/);
@@ -287,12 +332,46 @@
       loadSketch(0);
     }
 
+    async function loadPrompts() {
+      try {
+        const response = await fetch('prompts.json', { cache: 'no-store' });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const data = await response.json();
+
+        // Extract year from data if available
+        if (data.year) {
+          galleryYear = data.year;
+          updateTitleBar();
+        }
+
+        const prompts = Array.isArray(data.genuaryPrompts) ? data.genuaryPrompts : [];
+        sketches = createSketchEntries(prompts);
+
+        if (!sketches.length) {
+          showPromptsError('No prompts available in prompts.json.');
+          return;
+        }
+
+        daySelect.disabled = false;
+        populateDaySelect();
+        loadFromHash();
+        window.addEventListener('hashchange', loadFromHash);
+      } catch (err) {
+        const needsServer = window.location.protocol === 'file:';
+        const message = needsServer
+          ? 'Opening index.html directly limits access to prompts.json. Run a local server (npm run serve) to load prompts.'
+          : 'Unable to load prompts.json.';
+        console.warn(message, err);
+        showPromptsError(message);
+      }
+    }
+
     function init() {
       updateTitleBar();
-      populateDaySelect();
-      loadFromHash();
-      window.addEventListener('hashchange', loadFromHash);
       loadConfig();
+      loadPrompts();
     }
 
     init();

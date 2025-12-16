@@ -1,11 +1,18 @@
 {
-  "name": "genuary-{{year}}-sketches-{{yourName}}",
+  "name": "genuary-gallery",
   "version": "1.0.0",
-  "private": true,
-  "description": "Genuary {{year}} sketches",
-  "author": "{{Your Name}}",
+  "description": "Standalone gallery for Genuary creative coding projects",
+  "main": "index.html",
   "scripts": {
-    "serve": "npx http-server -p 8080",
-    "dev": "npx http-server -p 8080 -o -c-1 --watch"
-  }
+    "serve": "npx http-server -p 3000 -c-1",
+    "start": "npm run serve"
+  },
+  "keywords": [
+    "genuary",
+    "creative-coding",
+    "gallery",
+    "generative-art"
+  ],
+  "author": "",
+  "license": "MIT"
 }
